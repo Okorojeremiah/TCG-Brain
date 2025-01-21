@@ -1,0 +1,2 @@
+class FaissInitializationError(Exception):
+    pass

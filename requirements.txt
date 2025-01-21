@@ -1,0 +1,15 @@
+Flask
+Flask-Cors
+Flask-JWT-Extended
+flask-SQLAlchemy
+Flask-migrate  
+google-generativeai
+PyPDF2
+python-pptx
+python-docx
+psycopg2
+psycopg2-binary
+werkzeug
+SQLAlchemy
+sentence-transformers 
+faiss-cpu
