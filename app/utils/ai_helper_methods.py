@@ -68,10 +68,7 @@ def load_faiss_index():
         logger.error(f"Failed to initialize FAISS index: {e}")
         raise FaissInitializationError("FAISS index initialization failed") from e
     
-# def create_new_index():
-#     quantizer = faiss.IndexFlatL2(384)
-#     index = faiss.IndexIVFPQ(quantizer, 384, 64, 8)
-#     return faiss.IndexIDMap(index)
+
 
 def create_new_index():
     global index

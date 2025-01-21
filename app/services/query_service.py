@@ -5,9 +5,7 @@ from app.utils.logger import logger
 from app.models.query_history import QueryHistory
 from datetime import datetime
 from app.models.database import db
-from langchain_google_vertexai import ChatVertexAI
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationChain
+
 
 
 
@@ -32,17 +30,10 @@ def query_documents(user_query, current_user, user_id, session_id):
         prompt = get_prompt(document_context, user_query, user_role)
 
         model = gemini.GenerativeModel("gemini-1.5-pro")
-        # model = ChatVertexAI("gemini-1.5-pro")
        
         chat_response = model.start_chat(history=[
             {"role": "user", "parts": prompt}
         ])
-        # memory = ConversationBufferMemory()
-
-        # conversation = ConversationChain(llm=llm, memory=memory)
-        # chat_response = model.invoke(history=[
-        #     {"role": "user", "parts": prompt}
-        # ])
 
         answer = chat_response.send_message('text') 
         save_query_history(user_id, user_query, answer.text, session_id)

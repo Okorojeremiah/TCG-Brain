@@ -13,3 +13,6 @@ werkzeug
 SQLAlchemy
 sentence-transformers 
 faiss-cpu
+dotenv
+redis
+flask_apscheduler
