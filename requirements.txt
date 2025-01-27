@@ -13,6 +13,23 @@ werkzeug
 SQLAlchemy
 sentence-transformers 
 faiss-cpu
-dotenv
+python-dotenv
 redis
 flask_apscheduler
+nltk
+gtts
+
+python-jose[cryptography]==3.3.0
+bcrypt==4.1.2
+PyJWT==2.8.0
+
+# Performance and Monitoring
+prometheus-flask-exporter==0.23.0
+Flask-Caching==2.1.0
+gunicorn==21.2.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+

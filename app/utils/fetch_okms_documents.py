@@ -12,17 +12,6 @@ from app.models.database import db
 from app.utils.ai_helper_methods import add_doc_with_id_to_faiss, index_contains_document
 from sqlalchemy.exc import SQLAlchemyError
 
-
-    
-# def fetch_okms_documents(app):
-#     with app.app_context():
-#         engine = db.get_engine(bind_key='okms')
-#         with engine.connect() as connection:
-#             results = connection.exec_driver_sql("SELECT * FROM documents")
-            
-#             # Format results
-#             documents = [{"id": d.id} for d in results]
-#             return {"documents": documents}
         
 def fetch_okms_document_contents(engine):
     """

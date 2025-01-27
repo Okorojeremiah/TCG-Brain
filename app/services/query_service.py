@@ -1,22 +1,21 @@
-from app.utils.ai_helper_methods import get_prompt, search_documents, fetch_user_role, fetch_document_content
+from app.utils.ai_helper_methods import get_prompt, search_documents, fetch_document_content
 import google.generativeai as gemini
 from app.utils.config import config
 from app.utils.logger import logger
 from app.models.query_history import QueryHistory
 from datetime import datetime
 from app.models.database import db
-
-
-
+from app.services.user_service import fetch_user_profile
 
 
 gemini.configure(api_key=config.SECRET_KEY)
 
 
-def query_documents(user_query, current_user, user_id, session_id):
+def send_query_receive_response(user_query, current_user, user_id, session_id):
     try:
         if current_user:
-            user_role = fetch_user_role(user_id)
+            user_profile = fetch_user_profile(user_id)
+            user_role = user_profile.get("job_role")
             
             search_results = search_documents(user_query)
             logger.debug(f"Search results: {search_results}")

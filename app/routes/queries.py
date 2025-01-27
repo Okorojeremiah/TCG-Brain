@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.verify_session import verify_session
-from app.services.query_service import query_documents, fetch_user_query_history
+from app.services.query_service import send_query_receive_response, fetch_user_query_history
 
 
 queries_bp = Blueprint('queries', __name__, url_prefix='/user')
@@ -27,7 +27,7 @@ def query():
    if not user_id:
         return jsonify({"error": "User ID not found in session."}), 401
    
-   chat_response = query_documents(user_query, identity, user_id, session_id)
+   chat_response = send_query_receive_response(user_query, identity, user_id, session_id)
    if "error" in chat_response:
         return jsonify(chat_response), 500
    else:

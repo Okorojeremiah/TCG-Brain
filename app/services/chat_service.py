@@ -1,0 +1,104 @@
+from app.models.database import db
+from app.models.chat import Chat
+from datetime import datetime
+from app.utils.logger import logger
+import re
+from nltk.tokenize import word_tokenize
+from nltk import pos_tag
+
+
+
+def create_chat_instance(user_id, session_id):
+    try:
+        chat = Chat (
+            user_id=user_id,
+            session_id=session_id,
+            name=None,
+            started_at=datetime.now()
+        )
+        db.session.add(chat)
+        db.session.commit()
+        return chat
+    except Exception as e:
+        logger.error(f"Error saving chat: {e}", exc_info=True)
+        raise
+    
+def get_or_create_default_chat(user_id, session_id):
+    """
+    Ensures the user has a default chat session.
+    If none exists, create one.
+    """
+    chat = Chat.query.filter_by(user_id=user_id, session_id=session_id).first()
+    if not chat:
+        chat = create_chat_instance(user_id, session_id)  
+    return chat
+
+
+def fetch_chat_history(user_id):
+    chats = Chat.query.filter_by(user_id=user_id).all()
+    chat_list = [chat.to_dict() for chat in chats]
+    logger.info(f"Fetched chat history: {chat_list}") 
+    return chat_list
+
+def fetch_chat_messages(chat_id):
+    """
+    Fetches the messages for a specific chat ID as a plain Python structure.
+    """
+    chat = get_chat(chat_id)
+    if not chat:
+        return {"error": "Chat not found", "status": 404}
+
+    messages = [
+        {"sender": "User" if m.sender == "User" else "Brain", "content": m.content}
+        for m in chat.messages
+    ]
+    return {"name": chat.name, "messages": messages, "status": 200}
+
+def get_chat(chat_id):
+    return Chat.query.get(chat_id)
+
+
+def generate_chat_name(initial_prompt):
+    """
+    Generates a descriptive name for the chat based on the initial user prompt.
+    """
+    # Extract keywords from the initial prompt
+    keywords = extract_keywords(initial_prompt)
+
+    # Generate a base name using the first few keywords
+    base_name = " ".join(keywords[:5])  # Limit to 3 keywords for brevity
+
+    # Shorten and clean the name
+    base_name = shorten_name(base_name)
+    base_name = clean_name(base_name)
+
+    return base_name
+
+
+def extract_keywords(text):
+    """
+    Extracts keywords (nouns and verbs) from the given text.
+    """
+    try:
+        tokens = word_tokenize(text.lower())
+        pos_tags = pos_tag(tokens)
+        keywords = [word for word, pos in pos_tags if pos in ['NN', 'NNS', 'VB', 'VBG', 'VBN', 'VBD']]
+        return keywords
+    except Exception as e:
+        logger.error(f"Error extracting keywords: {e}", exc_info=True)
+        return []
+
+
+def shorten_name(name):
+    """
+    Shortens the name if it exceeds a certain length.
+    """
+    max_length = 30
+    return name[:max_length] + "..." if len(name) > max_length else name
+
+
+def clean_name(name):
+    """
+    Cleans the name by removing special characters and ensuring proper formatting.
+    """
+    return re.sub(r'[^\w\s-]', '', name).strip()

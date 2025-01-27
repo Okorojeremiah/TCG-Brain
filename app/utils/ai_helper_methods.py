@@ -3,8 +3,6 @@ import os
 import gc
 import numpy as np
 import faiss
-import redis
-from app.models.user import User
 from typing import List, Dict
 from app.models.document import Document
 from app.models.database import db
@@ -17,8 +15,10 @@ from app.utils.redis import get_from_cache, set_in_cache
 
 
 
+
 index_lock = threading.Lock()
 index = None 
+
 
 
 def get_model():
@@ -68,7 +68,6 @@ def load_faiss_index():
         logger.error(f"Failed to initialize FAISS index: {e}")
         raise FaissInitializationError("FAISS index initialization failed") from e
     
-
 
 def create_new_index():
     global index
@@ -140,7 +139,7 @@ def hash_query(query: str) -> str:
     """
     return hashlib.sha256(query.encode()).hexdigest()
 
- 
+
 def search_documents(query):
     """
     Searches the FAISS index for documents matching the query.
@@ -178,36 +177,60 @@ def search_documents(query):
         raise RuntimeError("An error occurred during document search") from e
 
 
-def get_prompt(document_context, user_query, user_role):
+# def get_prompt(document_context, user_query, user_role):
+#     prompt = (
+#         f"In this chat, your name is Brain:\n\n"
+#         f"TCG stands for The Concept Group, a company located in Nigeria. "
+#         f"The Concept Group specializes in financial services, technology, and business solutions. "
+#         f"You should always assume 'TCG' refers to The Concept Group.\n\n"
+#         f"You are an AI assistant for answering all TCG-related questions and general questions too:\n\n"
+#         f"Use the following TCG documents to answer the user's question if applicable:\n\n"
+#         f"{document_context}\n\n"
+#         f"You should also answer questions as a professional {user_role}.\n\n"
+#         f"Question: {user_query}"
+#     )
+#     return prompt
+
+
+# def get_prompt(document_context, user_query, user_role, chat_history):
+#     # Format chat history to include previous messages
+#     history_text = "\n".join(
+#         f"{message['sender']}: {message['content']}" for message in chat_history
+#     )
+    
+#     prompt = (
+#         f"In this chat, your name is Brain:\n\n"
+#         f"TCG stands for The Concept Group, a company located in Nigeria. "
+#         f"The Concept Group specializes in financial services, technology, and business solutions. "
+#         f"You should always assume 'TCG' refers to The Concept Group.\n\n"
+#         f"You are an AI assistant for answering all TCG-related questions and general questions too:\n\n"
+#         f"Use the following TCG documents to answer the user's question if applicable:\n\n"
+#         f"{document_context}\n\n"
+#         f"Consider the following chat history:\n{history_text}\n\n"
+#         f"You should also answer questions as a professional {user_role}.\n\n"
+#         f"Question: {user_query}"
+#     )
+#     return prompt
+
+
+def get_prompt(document_context, user_query, user_role, chat_history):
+    """
+    Creates a prompt for the AI that incorporates chat history for better contextual understanding.
+    """
+    history_context = "\n".join([f"{msg['sender']}: {msg['content']}" for msg in chat_history])
+
     prompt = (
-        f"In this chat, your name is Brain:\n\n"
-        f"TCG stands for The Concept Group, a company located in Nigeria. "
-        f"The Concept Group specializes in financial services, technology, and business solutions. "
-        f"You should always assume 'TCG' refers to The Concept Group.\n\n"
-        f"You are an AI assistant for answering all TCG-related questions and general questions too:\n\n"
-        f"Use the following TCG documents to answer the user's question if applicable:\n\n"
-        f"{document_context}\n\n"
-        f"You should also answer questions as a professional {user_role}.\n\n"
-        f"Question: {user_query}"
+        f"Your name is Brain. TCG refers to The Concept Group (Nigeria), specializing in financial services, technology, and business solutions.  Answer the following prompt using your knowledge and the provided context, drawing upon the documents where applicable.\n\n"
+        f"Chat History:\n{history_context}\n\n"
+        f"Documents:\n{document_context}\n\n"
+        f"User Role: {user_role} (Answer in a style appropriate for this professional role.)\n\n"
+        f"Keep your responses conversational, context-aware, and polite.\n\n"
+        f"Question: {user_query}\n\n"
+        # f"If the answer cannot be found in the provided context, respond with 'I am unable to answer this question based on the provided information.'"
     )
     return prompt
 
-def fetch_user_role(user_id):
-    try:
-        if not user_id or not isinstance(user_id, int):
-            raise ValueError("Invalid user_id provided.")
-        
-        user = User.query.get(user_id)
-        
-        if not user:
-            logger.warning(f"User with ID {user_id} not found.")
-            return {"error": "User not found"}
-        
-        return user.job_role
-    
-    except Exception as e:
-        logger.error(f"Error fetching user role for ID {user_id}: {e}")
-        return {"error": str(e)}
+
     
 
 
