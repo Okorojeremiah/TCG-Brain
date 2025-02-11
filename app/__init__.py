@@ -32,23 +32,15 @@ def create_app():
     
     from app.routes.auth import auth_bp
     from app.routes.documents import documents_bp
-    from app.routes.queries import queries_bp
     from app.routes.user import user_bp
     from app.routes.message import message_bp
     from app.routes.chat import chat_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(documents_bp)
-    app.register_blueprint(queries_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(message_bp)
     app.register_blueprint(chat_bp)
-    
-    # @app.after_request
-    # def apply_security_headers(response):
-    #     for header, value in config.SECURITY_HEADERS.items():
-    #         response.headers[header] = value
-    #     return response
 
     return app
 

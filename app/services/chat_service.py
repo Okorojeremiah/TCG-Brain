@@ -5,6 +5,7 @@ from app.utils.logger import logger
 import re
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 
 
@@ -54,8 +55,73 @@ def fetch_chat_messages(chat_id):
     ]
     return {"name": chat.name, "messages": messages, "status": 200}
 
-def get_chat(chat_id):
+def get_chat(chat_id):  
+    if chat_id is None:
+        return None 
     return Chat.query.get(chat_id)
+
+def delete_chat_history(chat_id):
+    try:
+        chat = get_chat(chat_id)
+        if chat is None:
+            logger.error(f"Error: Chat with ID {chat_id} not found.")
+            return {"error": "Chat not found", "status": 404}
+
+        db.session.delete(chat)
+        db.session.commit()
+
+        logger.info(f"Chat deleted successfully. chat_id: {chat_id}")
+        return {"message": "Chat deleted successfully", "status": 200}
+
+    except IntegrityError as e:
+        logger.exception(f"Database IntegrityError while deleting chat. chat_id: {chat_id}, error: {e}")
+        return {"error": "Database integrity error", "status": 500}
+    except OperationalError as e:
+        logger.exception(f"Database OperationalError while deleting chat. chat_id: {chat_id}, error: {e}")
+        return {"error": "Database operational error", "status": 500}
+    except Exception as e:
+        logger.exception(f"Unexpected error while deleting chat. chat_id: {chat_id}, error: {e}")
+        return {"error": "An unexpected error occurred", "status": 500}
+
+
+def edit_chat_history_name(new_chat_name, chat_id):
+    if not new_chat_name:
+        logger.error(f"Error: Attempt to update chat name with empty string. chat_id: {chat_id}")
+        return {"error": "Chat name cannot be empty", "status": 400} 
+
+    try:
+        chat = get_chat(chat_id)
+        if chat is None:
+            logger.error(f"Error: Chat with ID {chat_id} not found.")
+            return {"error": "Chat not found", "status": 404} 
+
+        
+        sanitized_name = sanitize_input(new_chat_name) 
+        
+        existing_chat = Chat.query.filter_by(name=sanitized_name).first()
+        if existing_chat:
+            return {"error": "Chat name already exists", "status": 400}
+
+        chat.name = sanitized_name
+        db.session.commit()
+        
+        logger.info(f"Chat name updated successfully. chat_id: {chat_id}, new_name: {sanitized_name}")
+        return {"message": "Chat name updated successfully", "status": 200} 
+
+    except IntegrityError as e:
+        logger.exception(f"Database IntegrityError while updating chat name. chat_id: {chat_id}, error: {e}")
+        return {"error": "Database integrity error", "status": 500} 
+    except OperationalError as e:
+        logger.exception(f"Database OperationalError while updating chat name. chat_id: {chat_id}, error: {e}")
+        return {"error": "Database operational error", "status": 500} 
+    except Exception as e:
+        logger.exception(f"Unexpected error while updating chat name. chat_id: {chat_id}, error: {e}")
+        return {"error": "An unexpected error occurred", "status": 500} 
+
+
+def sanitize_input(input_string):
+    """Sanitize input by allowing only alphanumeric characters, spaces, underscores, and hyphens."""
+    return re.sub(r"[^a-zA-Z0-9 _-]", "", input_string)
 
 
 def generate_chat_name(initial_prompt):

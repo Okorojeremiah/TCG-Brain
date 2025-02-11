@@ -42,6 +42,7 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
         model = gemini.GenerativeModel("gemini-1.5-flash")
         chat_response = model.start_chat(history=[
             {"role": "user", "parts": prompt}
+            
         ])
 
         answer = chat_response.send_message('text') 

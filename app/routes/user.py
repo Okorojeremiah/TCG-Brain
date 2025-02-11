@@ -10,7 +10,7 @@ user_bp = Blueprint('users', __name__, url_prefix="/user")
 @jwt_required()
 def get_user_profile():
     if request.method == "OPTIONS":
-        return ' ', 200
+        return ' ', 204
     
     identity = get_jwt_identity()
     session_response = verify_session(identity)

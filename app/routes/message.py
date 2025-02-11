@@ -2,21 +2,19 @@ from flask import Blueprint, request, jsonify, Flask
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.verify_session import verify_session
 from app.services.message_service import send_message_receive_response
-from gtts import gTTS
-import os
-
 from app.utils.logger import logger
+from app.utils.config import config
+
 
 
 message_bp = Blueprint('message', __name__, url_prefix='/user/chat')
-app = Flask(__name__)
 
 
 @message_bp.route('/messages', methods=["OPTIONS", "POST"])
 @jwt_required()
 def query():
    if request.method == 'OPTIONS':
-        return ' ', 200  
+        return ' ', 204  
      
    user_message = request.json.get('user_message', '').strip()
    chat_id = request.json.get('chat_id')
@@ -44,7 +42,7 @@ def query():
 @jwt_required()
 def voice_mode():
     if request.method == 'OPTIONS':
-        return ' ', 200
+        return ' ', 204
 
     # Get the transcribed text from the frontend
     transcribed_text = request.json.get('transcribed_text', '').strip()
@@ -70,18 +68,10 @@ def voice_mode():
         if "error" in chat_response:
             return jsonify(chat_response), 500
 
-        # Generate audio from the AI's response
-        tts = gTTS(text=chat_response["answer"], lang="en")
-        audio_filename = f"response_{user_id}_{session_id}.mp3"
-        audio_path = os.path.join("audio", audio_filename)
-        tts.save(audio_path)
-
-        # Return only the audio file URL
         return jsonify({
-            "audio_url": f"/audio/{audio_filename}"
+            "response_text": chat_response["answer"]
         }), 200
     except Exception as e:
         logger.error(f"Error in voice mode: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
-# Serve audio files
