@@ -13,11 +13,7 @@ RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 # Copy the rest of your application code
 COPY . .
 
-# Expose the port your app runs on (Flask defaults to 5000)
-EXPOSE 5000
+EXPOSE 8000
 
-# Define environment variable for Flask 
-ENV FLASK_APP=run.py
-
-# Run the application (binding to 0.0.0.0 makes it accessible externally)
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Run the application 
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "tcg-brain:app"]
