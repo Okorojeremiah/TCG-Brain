@@ -2,13 +2,11 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    image: worldbestdev/tcg-brain:latest
     ports:
       - "8000:8000"
-    env_file:
-      - ./prod.env
     environment:
-      - DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB
+      - DATABASE_URL=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB
       - REDIS_URL=redis://redis:6379
     depends_on:
       - db

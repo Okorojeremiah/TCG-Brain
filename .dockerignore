@@ -32,11 +32,9 @@ build/
 .DS_Store
 Thumbs.db
 
-
 # Secrets
 config.yaml
 credentials.json
-production-env
 
 # Large files
 data/

@@ -15,7 +15,6 @@ documents_bp = Blueprint('documents', __name__, url_prefix='/documents')
 def upload_document():
     if request.method == 'OPTIONS':
         return '', 204
-
     identity = get_jwt_identity()
     session_response = verify_session(identity)
     user_id = session_response.get("user_id")

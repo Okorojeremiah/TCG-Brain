@@ -1,6 +1,11 @@
 import os
 from werkzeug.utils import secure_filename
-from app.services.file_processing import extract_text_from_pdf, extract_text_from_ppt, extract_text_from_word
+from app.services.file_processing import (
+    extract_text_from_pdf, 
+    extract_text_from_word, 
+    extract_text_from_ppt, 
+    extract_text_from_excel
+)
 from .config import config
 from app.models.document import Document
 
@@ -16,7 +21,7 @@ def validate_file(file):
         return {"error": "File already exists", "status": 400}
     
     # Check file extension and process accordingly
-    if file and allowed_file(file.filename, {"pdf", "docx", "txt", "pptx"}):
+    if file and allowed_file(file.filename, {"pdf", "docx", "txt", "pptx", "xlsx", "xls"}):
         filename = secure_filename(file.filename)
         os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
         filepath = os.path.join(config.UPLOAD_FOLDER, filename)
@@ -34,6 +39,11 @@ def validate_file(file):
                 text = extract_text_from_word(filepath)
             elif file_extension == 'pptx':
                 text = extract_text_from_ppt(filepath)
+            elif file_extension in ['xlsx', 'xls']:
+                text = extract_text_from_excel(filepath)
+            elif file_extension == 'txt':
+                with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                    text = f.read()
             else:
                 return {"error": f"Unsupported file type: {file_extension}", "status": 400}
             

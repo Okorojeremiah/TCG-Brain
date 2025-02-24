@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y gcc libpq-dev
 WORKDIR /app
 
 # Copy the requirements file and install dependencies
-COPY requirements.txt .
+COPY ./requirements.txt requirements.txt
 RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 
 # Copy the rest of your application code
@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the application 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "tcg-brain:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "run:app"]
