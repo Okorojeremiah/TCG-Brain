@@ -41,3 +41,4 @@ production-env
 # Large files
 data/
 audio/
+uploads/
