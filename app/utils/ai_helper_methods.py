@@ -5,6 +5,7 @@ import numpy as np
 import faiss
 from typing import List, Dict
 from app.models.document import Document
+from app.models.general_document import GeneralDocument
 from app.models.database import db
 from app.utils.logger import logger
 from sentence_transformers import SentenceTransformer
@@ -32,19 +33,30 @@ def fetch_document_content(document_ids: List[int], user_id) -> Dict[int, str]:
         if not document_ids:
             logger.warning("Empty document IDs provided.")
             return {"error": "No documents found"}
-        
+
+        # Fetch user-specific documents
         documents = Document.query.with_entities(Document.content).filter(
             Document.id.in_(document_ids),
             (Document.user_id == user_id) | (Document.source == 'okms')
         ).all()
 
+        # If no user-specific documents are found, fetch general documents
         if not documents:
-            logger.warning("No documents found for the given IDs.")
-            return {"error": "No documents found"}
+            general_documents = GeneralDocument.query.with_entities(GeneralDocument.content).filter(
+                GeneralDocument.id.in_(document_ids)
+            ).all()
 
-        document_contents = "\n\n".join([doc.content for doc in documents])
+            if not general_documents:
+                logger.warning("No documents found for the given IDs.")
+                return {"error": "No documents found"}
+
+            # Combine general document content
+            document_contents = "\n\n".join([doc.content for doc in general_documents])
+        else:
+            # Combine user-specific document content
+            document_contents = "\n\n".join([doc.content for doc in documents])
+
         return document_contents
-
     except Exception as e:
         logger.error(f"Error fetching document content: {e}")
         return {"error": str(e)}
@@ -140,7 +152,7 @@ def hash_query(query: str) -> str:
     return hashlib.sha256(query.encode()).hexdigest()
 
 
-def search_documents(query):
+def search_documents(query, user_id):
     """
     Searches the FAISS index for documents matching the query.
     """
@@ -167,7 +179,10 @@ def search_documents(query):
         ids = I.tolist()[0]
         logger.info(f"Search returned IDs: {ids}")
         
-        search_result = {'ids': ids}
+        # Fetch user-specific or general documents
+        user_documents = fetch_document_content(ids, user_id)
+        
+        search_result = {'content': user_documents}
         set_in_cache(query_hash, search_result)
         logger.info("Search result cached.")
         
@@ -175,42 +190,6 @@ def search_documents(query):
     except Exception as e:
         logger.error(f"Error during FAISS search: {e}", exc_info=True)
         raise RuntimeError("An error occurred during document search") from e
-
-
-# def get_prompt(document_context, user_query, user_role):
-#     prompt = (
-#         f"In this chat, your name is Brain:\n\n"
-#         f"TCG stands for The Concept Group, a company located in Nigeria. "
-#         f"The Concept Group specializes in financial services, technology, and business solutions. "
-#         f"You should always assume 'TCG' refers to The Concept Group.\n\n"
-#         f"You are an AI assistant for answering all TCG-related questions and general questions too:\n\n"
-#         f"Use the following TCG documents to answer the user's question if applicable:\n\n"
-#         f"{document_context}\n\n"
-#         f"You should also answer questions as a professional {user_role}.\n\n"
-#         f"Question: {user_query}"
-#     )
-#     return prompt
-
-
-# def get_prompt(document_context, user_query, user_role, chat_history):
-#     # Format chat history to include previous messages
-#     history_text = "\n".join(
-#         f"{message['sender']}: {message['content']}" for message in chat_history
-#     )
-    
-#     prompt = (
-#         f"In this chat, your name is Brain:\n\n"
-#         f"TCG stands for The Concept Group, a company located in Nigeria. "
-#         f"The Concept Group specializes in financial services, technology, and business solutions. "
-#         f"You should always assume 'TCG' refers to The Concept Group.\n\n"
-#         f"You are an AI assistant for answering all TCG-related questions and general questions too:\n\n"
-#         f"Use the following TCG documents to answer the user's question if applicable:\n\n"
-#         f"{document_context}\n\n"
-#         f"Consider the following chat history:\n{history_text}\n\n"
-#         f"You should also answer questions as a professional {user_role}.\n\n"
-#         f"Question: {user_query}"
-#     )
-#     return prompt
 
 
 def get_prompt(document_context, user_query, user_role, chat_history):
@@ -224,9 +203,8 @@ def get_prompt(document_context, user_query, user_role, chat_history):
         f"Chat History:\n{history_context}\n\n"
         f"Documents:\n{document_context}\n\n"
         f"User Role: {user_role} (Answer in a style appropriate for this professional role.)\n\n"
-        f"Keep your responses conversational, context-aware, and polite.\n\n"
+        f"Keep your responses conversational, context-aware, and polite. Also avoid repetitive statements like: based on the provided document.\n\n"
         f"Question: {user_query}\n\n"
-        # f"If the answer cannot be found in the provided context, respond with 'I am unable to answer this question based on the provided information.'"
     )
     return prompt
 

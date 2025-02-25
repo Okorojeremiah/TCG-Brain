@@ -4,7 +4,15 @@ from datetime import datetime
 import PyPDF2
 import openpyxl
 from app.models.document import Document
+from app.models.general_document import GeneralDocument
 from app.models.database import db
+from io import BytesIO
+from PIL import Image
+from PyPDF2 import PdfReader, PdfWriter
+import os
+from app.utils.logger import logger
+import subprocess
+import tempfile
 
 
 def extract_text_from_pdf(pdf_path):
@@ -55,3 +63,145 @@ def save_file(user_id, file, file_extension, text):
         db.session.add(document)
         db.session.commit()
         return document  
+    
+
+def compress_doc(file):
+    """
+    Compresses a file if its size exceeds 1 MB.
+    Returns the compressed file or the original file if no compression is needed.
+    """
+    MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB in bytes
+
+    try:
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+
+        logger.info(f"Original file size: {file_size} bytes")
+
+        if file_size <= MAX_FILE_SIZE:
+            logger.debug("No compression needed.")
+            return file  # No compression needed
+
+        # Get file extension
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        logger.info(f"File extension: {file_extension}")
+
+        # Compress based on file type
+        if file_extension in ['.jpg', '.jpeg', '.png']:
+            logger.info("Compressing image file.")
+            img = Image.open(file)
+            img = img.convert('RGB')  # Convert to RGB for JPEG compatibility
+            output = BytesIO()
+            img.save(output, format='JPEG', quality=85, optimize=True)  # Adjust quality for compression
+            output.seek(0)
+            output.filename = file.filename
+            logger.info(f"Compressed image size: {output.getbuffer().nbytes} bytes")
+            return output
+
+        elif file_extension == '.pdf':
+            logger.info("Compressing PDF file using Ghostscript.")
+            # Save the original BytesIO content to a temporary file
+            file.seek(0)
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_input:
+                temp_input.write(file.read())
+                temp_input_path = temp_input.name
+
+            # Prepare a temporary file for Ghostscript output
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_output:
+                temp_output_path = temp_output.name
+
+            # Build the Ghostscript command
+            gs_command = [
+                "gswin64c",  # Ensure Ghostscript is installed and in PATH
+                "-sDEVICE=pdfwrite",
+                "-dCompatibilityLevel=1.4",
+                "-dPDFSETTINGS=/screen",  # Use /screen for low quality & small size; adjust as needed
+                "-dNOPAUSE",
+                "-dQUIET",
+                "-dBATCH",
+                f"-sOutputFile={temp_output_path}",
+                temp_input_path
+            ]
+            subprocess.run(gs_command, check=True)
+
+            # Read the compressed PDF back into BytesIO
+            with open(temp_output_path, 'rb') as f:
+                compressed_pdf_data = f.read()
+            output = BytesIO(compressed_pdf_data)
+            output.seek(0)
+            output.filename = file.filename
+
+            # Clean up temporary files
+            os.remove(temp_input_path)
+            os.remove(temp_output_path)
+
+            logger.info(f"Compressed PDF size: {output.getbuffer().nbytes} bytes")
+            return output
+
+        elif file_extension == '.docx':
+            logger.info("Compressing Word document.")
+            file.seek(0)
+            doc = DocxDocument(file)
+            for paragraph in doc.paragraphs:
+                if len(paragraph.text) > 1000:  # Truncate long paragraphs
+                    paragraph.text = paragraph.text[:1000] + "..."
+            output = BytesIO()
+            doc.save(output)
+            output.seek(0)
+            output.filename = file.filename
+            logger.info(f"Compressed Word document size: {output.getbuffer().nbytes} bytes")
+            return output
+
+        elif file_extension in ['.pptx']:
+            logger.info("Compressing PowerPoint file.")
+            file.seek(0)
+            ppt = Presentation(file)
+            for slide in ppt.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, 'text') and len(shape.text) > 1000:
+                        shape.text = shape.text[:1000] + "..."
+            output = BytesIO()
+            ppt.save(output)
+            output.seek(0)
+            output.filename = file.filename
+            logger.info(f"Compressed PowerPoint size: {output.getbuffer().nbytes} bytes")
+            return output
+
+        elif file_extension in ['.xlsx', '.xls']:
+            logger.info("Compressing Excel file.")
+            file.seek(0)
+            wb = openpyxl.load_workbook(file)
+            for sheet in wb.worksheets:
+                for row in sheet.iter_rows():
+                    for cell in row:
+                        if cell.value and len(str(cell.value)) > 1000:
+                            cell.value = str(cell.value)[:1000] + "..."
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            output.filename = file.filename
+            logger.info(f"Compressed Excel size: {output.getbuffer().nbytes} bytes")
+            return output
+
+        else:
+            logger.info("Unsupported file type. Returning original file.")
+            return file
+
+    except Exception as e:
+        logger.error(f"Error compressing file: {e}", exc_info=True)
+        raise
+
+def save_general_files(user_id, file, file_type, text):
+    document = GeneralDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document

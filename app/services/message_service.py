@@ -21,11 +21,10 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
             user_profile = fetch_user_profile(user_id)
             user_role = user_profile.get("job_role")
             
-            search_results = search_documents(user_query)
+            search_results = search_documents(user_query, user_id)
             logger.debug(f"Search results: {search_results}")
 
-            document_ids = search_results["ids"]
-            document_context = fetch_document_content(document_ids, user_id)
+            document_context = search_results["content"]
         else:
             document_context = "Sorry, you have to be an authenticated user to access this data."
 

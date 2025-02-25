@@ -5,11 +5,15 @@ import uuid
 from app.models.database import db
 from flask_jwt_extended import create_access_token
 from datetime import timedelta
+from app.utils.email_validation import validate_email
 
 def register_user(data):
     try:
         email = data.get("email")
         password = data.get("password")
+        
+        validate_email(email)
+        
         if User.query.filter_by(email=email).first():
             return {"error": "Email already exists", "status": 400}
         
@@ -37,6 +41,7 @@ def authenticate_user(data):
     identity_payload = json.dumps({
         "user_id": user.id,
         "session_id": session_id,
+        "is_superuser": user.is_superuser 
     })
 
     access_token = create_access_token(

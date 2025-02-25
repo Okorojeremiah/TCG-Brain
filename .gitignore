@@ -38,6 +38,8 @@ config.yaml
 credentials.json
 production-env
 
+app/services/create_superuser.py
+
 # Large files
 data/
 audio/

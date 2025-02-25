@@ -6,6 +6,7 @@ from app.services.file_processing import (
     extract_text_from_ppt, 
     extract_text_from_excel
 )
+from io import BytesIO
 from .config import config
 from app.models.document import Document
 
@@ -25,7 +26,13 @@ def validate_file(file):
         filename = secure_filename(file.filename)
         os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
         filepath = os.path.join(config.UPLOAD_FOLDER, filename)
-        file.save(filepath)
+        
+         # Save the file to disk if it's a BytesIO object
+        if isinstance(file, BytesIO):
+            with open(filepath, 'wb') as f:
+                f.write(file.getvalue())
+        else:
+            file.save(filepath)
 
         # Determine file extension
         file_extension = os.path.splitext(filename)[1][1:].lower()
