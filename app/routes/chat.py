@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from app.models import User
 from app.services.chat_service import create_chat_instance, fetch_chat_history, fetch_chat_messages, edit_chat_history_name, delete_chat_history
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -114,3 +114,25 @@ def delete_chat(chat_id):
         return jsonify({"error": result["error"]}), 500
 
     return jsonify({"message": result["message"]}), 200
+
+
+@chat_bp.route("/chat/set_current", methods=["POST"])
+@jwt_required()
+def set_current_chat():
+    if request.method == 'OPTIONS':
+        return ' ', 204
+    
+    chat_id = request.json.get("chatId")
+    if chat_id:
+        session["current_chat_id"] = chat_id
+        return jsonify({"success": True})
+    return jsonify({"error": "Invalid chat ID"}), 400
+
+
+@chat_bp.route("/chat/current", methods=["GET"])
+@jwt_required()
+def get_current_chat():
+    if request.method == 'OPTIONS':
+        return ' ', 204
+    current_chat_id = session.get("current_chat_id")
+    return jsonify({"chatId": current_chat_id})

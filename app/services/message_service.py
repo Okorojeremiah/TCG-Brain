@@ -9,10 +9,10 @@ from app.services.user_service import fetch_user_profile
 from app.services.chat_service import get_or_create_default_chat, generate_chat_name, get_chat, fetch_chat_messages
 
 
-gemini.configure(api_key=config.SECRET_KEY)
+gemini.configure(api_key=config.GEMINI_API_SECRET_KEY)
 
 
-def send_message_receive_response(user_query, current_user, user_id, chat_id, session_id):
+def send_message_receive_response(user_query, current_user, user_id, chat_id, session_id, user_department, is_update=False):
     """
     Processes the user's query and fetches the chat history, appending context to the AI prompt.
     """
@@ -21,7 +21,7 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
             user_profile = fetch_user_profile(user_id)
             user_role = user_profile.get("job_role")
             
-            search_results = search_documents(user_query, user_id)
+            search_results = search_documents(user_query, user_id, user_department)
             logger.debug(f"Search results: {search_results}")
 
             document_context = search_results["content"]
@@ -38,16 +38,18 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
         # Generate prompt with chat history
         prompt = get_prompt(document_context, user_query, user_role, chat_history)
 
-        model = gemini.GenerativeModel("gemini-1.5-flash")
+        model = gemini.GenerativeModel("gemini-2.0-flash-001")
         chat_response = model.start_chat(history=[
             {"role": "user", "parts": prompt}
             
         ])
 
         answer = chat_response.send_message('text') 
-        save_message(user_id, session_id, "User", user_query, chat_id)
-        save_message(user_id, session_id, "Brain", answer.text, chat_id)
-
+        
+        if not is_update:
+            save_message(user_id, session_id, "User", user_query, chat_id)
+            save_message(user_id, session_id, "Brain", answer.text, chat_id)
+        
         return {"query": user_query, "answer": answer.text}
 
     except Exception as e:

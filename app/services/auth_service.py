@@ -1,6 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models.user import User
-from flask import jsonify, json
+from flask import jsonify, json, session
 import uuid
 from app.models.database import db
 from flask_jwt_extended import create_access_token
@@ -9,8 +9,11 @@ from app.utils.email_validation import validate_email
 
 def register_user(data):
     try:
+        name = data.get("name")
         email = data.get("email")
         password = data.get("password")
+        department = data.get("department")
+        job_role = data.get("job_role")
         
         validate_email(email)
         
@@ -18,10 +21,11 @@ def register_user(data):
             return {"error": "Email already exists", "status": 400}
         
         user = User(
-            name=data.get("name"),
+            name=name,
             email=email,
             password=generate_password_hash(password),
-            job_role=data.get("job_role"),
+            department=department,
+            job_role=job_role,
         )
         db.session.add(user)
         db.session.commit()
@@ -36,12 +40,14 @@ def authenticate_user(data):
     if not user or not check_password_hash(user.password, password):
         return jsonify({"error": "Invalid email or password"}), 401 
     
+    session.clear()
     session_id = str(uuid.uuid4())
     
     identity_payload = json.dumps({
         "user_id": user.id,
         "session_id": session_id,
-        "is_superuser": user.is_superuser 
+        "is_superuser": user.is_superuser,
+        "department": user.department
     })
 
     access_token = create_access_token(
@@ -58,6 +64,7 @@ def logout_current_user(current_user):
         current_user = json.loads(current_user)  
         user_id = current_user["user_id"]
         update_session_id(None, user_id)
+        session.clear()
     return {"message": "Logged out successfully"}
 
 

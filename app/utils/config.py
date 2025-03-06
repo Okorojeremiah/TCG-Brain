@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv("GEMINI_API_SECRET_KEY")
+    GEMINI_API_SECRET_KEY = os.getenv("GEMINI_API_SECRET_KEY")
     HUGGING_FACE_TRANSFORMER = os.getenv("HUGGING_FACE_TRANSFORMER")
     FAISS_INDEX_FILE = os.getenv("FAISS_INDEX_FILE")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -18,6 +18,7 @@ class Config:
     ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "pptx"}
     CORS_ORIGINS = os.getenv("CORS_ORIGINS")
     REDIS_URL = os.getenv("REDIS_URL")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
 
 config = Config()
 

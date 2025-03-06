@@ -8,10 +8,11 @@ def verify_session(identity):
         user_id = user_data.get("user_id")
         session_id = user_data.get("session_id")
         is_superuser = user_data.get("is_superuser")
+        user_department = user_data.get("department")
         
         user = User.query.get(user_id)
         if user and user.session_id == session_id:
-            return {"user_id": user_id, "session_id": session_id, "is_superuser": is_superuser}
+            return {"user_id": user_id, "session_id": session_id, "is_superuser": is_superuser, "department": user_department}
         else:
             return {"error": "Invalid session"}
     except Exception as e:

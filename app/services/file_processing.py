@@ -3,8 +3,26 @@ from pptx import Presentation
 from datetime import datetime
 import PyPDF2
 import openpyxl
-from app.models.document import Document
-from app.models.general_document import GeneralDocument
+from app.models.document import (
+    Document, 
+    GeneralDocument,
+    HRDocument,
+    ITDocument,
+    ReconciliationDocument,
+    MarketingDocument,
+    TransformationDocument,
+    CommunicationDocument,
+    InternalOperationDocument,
+    LegalDocument,
+    AccountDocument,
+    PortfolioRiskDocument,
+    UnderwriterDocument,
+    BusinessOperationDocument,
+    ClientExperienceDocument,
+    RecoveryDocument,
+    ProductDocument,
+    SalesDocument,
+)
 from app.models.database import db
 from io import BytesIO
 from PIL import Image
@@ -193,8 +211,216 @@ def compress_doc(file):
         logger.error(f"Error compressing file: {e}", exc_info=True)
         raise
 
+def save_account_files(user_id, file, file_type, text):
+    document = AccountDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
 def save_general_files(user_id, file, file_type, text):
     document = GeneralDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_businessOps_files(user_id, file, file_type, text):
+    document = BusinessOperationDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_communication_files(user_id, file, file_type, text):
+    document = CommunicationDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_hr_files(user_id, file, file_type, text):
+    document = HRDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_legal_files(user_id, file, file_type, text):
+    document = LegalDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_marketing_files(user_id, file, file_type, text):
+    document = MarketingDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_internalOps_files(user_id, file, file_type, text):
+    document = InternalOperationDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_product_files(user_id, file, file_type, text):
+    document = ProductDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_reconciliation_files(user_id, file, file_type, text):
+    document = ReconciliationDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+def save_recovery_files(user_id, file, file_type, text):
+    document = RecoveryDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_it_files(user_id, file, file_type, text):
+    document = ITDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_transformation_files(user_id, file, file_type, text):
+    document = TransformationDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_client_experience_files(user_id, file, file_type, text):
+    document = ClientExperienceDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+
+def save_sales_files(user_id, file, file_type, text):
+    document = SalesDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_portfolio_files(user_id, file, file_type, text):
+    document = PortfolioRiskDocument(
+        file_name=file.filename,
+        file_type=file_type,
+        content=text,
+        uploaded_by=user_id
+    )
+    db.session.add(document)
+    db.session.commit()
+        
+    
+    return document
+
+def save_underwriter_files(user_id, file, file_type, text):
+    document = UnderwriterDocument(
         file_name=file.filename,
         file_type=file_type,
         content=text,

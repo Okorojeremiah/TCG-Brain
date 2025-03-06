@@ -48,10 +48,17 @@ def fetch_chat_messages(chat_id):
     chat = get_chat(chat_id)
     if not chat:
         return {"error": "Chat not found", "status": 404}
+    
+    sorted_messages = sorted(chat.messages, key=lambda m: m.timestamp)
 
     messages = [
-        {"sender": "User" if m.sender == "User" else "Brain", "content": m.content}
-        for m in chat.messages
+        {
+            "id": m.id,
+            "sender": "User" if m.sender == "User" else "Brain", 
+            "content": m.content,
+            "timestamp": m.timestamp
+        }
+        for m in sorted_messages
     ]
     return {"name": chat.name, "messages": messages, "status": 200}
 

@@ -54,7 +54,8 @@ app = create_app()
 @click.argument("name")
 @click.argument("email")
 @click.argument("password")
-def create_superuser(name, email, password):
+@click.argument("department")
+def create_superuser(name, email, password, department):
     """Create a superuser."""
     # Check if a user with the same email already exists
     if User.query.filter_by(email=email).first():
@@ -66,6 +67,7 @@ def create_superuser(name, email, password):
         name=name,
         email=email,
         password=generate_password_hash(password),
+        department=department,
         job_role="Admin",
         is_superuser=True
     )
