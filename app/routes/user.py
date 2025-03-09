@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.verify_session import verify_session
-from app.services.user_service import fetch_user_profile, send_feedback
+from app.services.user_service import fetch_user_profile, send_feedback, update_profile
 
 
 user_bp = Blueprint('users', __name__, url_prefix="/user")
@@ -29,6 +29,26 @@ def get_user_profile():
         return jsonify(user_profile), 500
     else:
         return jsonify(user_profile), 200
+    
+@user_bp.route('/profile/update/<int:user_id>', methods=["OPTIONS", "PUT"])
+@jwt_required()
+def update_user_profile(user_id):
+    if request.method == "OPTIONS":
+        return ' ', 204
+    
+    data = request.json
+    
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    
+    if "error" in session_response:
+        return jsonify(session_response), 401 
+    
+    updated_profile = update_profile(user_id, data)
+    if "error" in updated_profile:
+        return jsonify(updated_profile), 500
+    else: 
+        return jsonify(updated_profile), 200
     
 
 @user_bp.route("/send-feedback", methods=["OPTIONS", "POST"])

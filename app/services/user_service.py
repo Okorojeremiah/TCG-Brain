@@ -39,9 +39,26 @@ def send_feedback(user_id, feedback_text):
         # Add and commit to database
         db.session.add(new_feedback)
         db.session.commit()
-
         return {'message': 'Feedback saved successfully!'}
     except Exception as e:
         db.session.rollback()  # Rollback if there's an error
         logger.error(f"Error saving feedback to database: {e}")
         return {'error': str(e)}
+    
+def update_profile(user_id, data):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
+        
+        user.name = data.get('name', user.name)
+        user.email = data.get('email', user.email)
+        user.department = data.get('department', user.department)
+        user.job_role = data.get('job_role', user.job_role)
+        
+        db.session.commit()
+        return {"message": "Profile updated successfully"} 
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating profile for user {user_id}: {e}")
+        return {"error": str(e)}, 500
