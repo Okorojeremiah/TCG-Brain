@@ -8,6 +8,8 @@ from io import BytesIO
 from gtts import gTTS
 from app.models.database import db
 from app.models.message import Message
+import json
+from datetime import datetime
 
 
 
@@ -44,62 +46,90 @@ def message():
         return jsonify(chat_response), 200
     
 
-# @message_bp.route('/messages/update', methods=['PUT'])
-# @jwt_required()
-# def update_message():
-#     data = request.json
-#     message_id = data.get('messageId')
-#     new_content = data.get('newContent')
+@message_bp.route('/messages/update_full', methods=['PUT'])
+@jwt_required()
+def update_full():
+    """
+    Expects a JSON payload with:
+      - userMessageId: ID of the user message to update
+      - aiMessageId: ID of the corresponding AI message to update
+      - newContent: New content for the user message (which will trigger regeneration of the AI response)
+    """
+    data = request.json
+    user_message_id = data.get('userMessageId')
+    ai_message_id = data.get('aiMessageId')
+    new_content = data.get('newContent')
 
-#     if not message_id or not new_content:
-#         return jsonify({"error": "messageId and newContent are required"}), 400
+    if not user_message_id or not ai_message_id or not new_content:
+        return jsonify({"error": "userMessageId, aiMessageId and newContent are required"}), 400
 
-#     # Fetch the message from the database
-#     message = Message.query.get(message_id)
-#     if not message:
-#         return jsonify({"error": "Message not found"}), 404
+    # Fetch both the user message and the AI message from the database
+    user_message = Message.query.get(user_message_id)
+    ai_message = Message.query.get(ai_message_id)
 
-#     try:
-#         # Save the current content to the user_edits list
-#         # Save the current content to the edits list
-#         message.edits.append(message.content)
-#         # Update the content with the new content
-#         message.content = new_content
-#         # Increment the edit count
-#         message.edit_count += 1
+    if not user_message or not ai_message:
+        return jsonify({"error": "User or AI Message not found"}), 404
 
-#         # Generate the assistant's response
-#         identity = get_jwt_identity()
-#         session_response = verify_session(identity)
-#         if "error" in session_response:
-#             return jsonify(session_response), 401
+    try:
+        # ------------------------
+        # Update the User Message
+        # ------------------------
+        user_edits = json.loads(user_message.edits) if user_message.edits else []
+        # Append current version before updating
+        user_edits.append({
+            'content': user_message.content,
+            'timestamp': user_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        user_message.edits = json.dumps(user_edits)
+        user_message.edit_count += 1
+        user_message.content = new_content
+        user_message.timestamp = datetime.utcnow()
 
-#         user_id = session_response.get("user_id")
-#         session_id = session_response.get("session_id")
-#         user_department = session_response.get("department")
+        # ---------------------------------------
+        # Regenerate the AI Response for the edit
+        # ---------------------------------------
+        identity = get_jwt_identity()
+        session_response = verify_session(identity)
+        if "error" in session_response:
+            return jsonify(session_response), 401
 
-#         chat_response = send_message_receive_response(
-#             new_content, identity, user_id, message.chat_id, session_id, user_department, is_update=True
-#         )
+        user_id = session_response.get("user_id")
+        session_id = session_response.get("session_id")
+        user_department = session_response.get("department")
 
-#         if "error" in chat_response:
-#             return jsonify(chat_response), 500
+        chat_response = send_message_receive_response(
+            new_content, identity, user_id, user_message.chat_id, session_id, user_department, is_update=True
+        )
+        if "error" in chat_response:
+            return jsonify(chat_response), 500
 
-#         # Save changes to the database
-#         db.session.commit()
+        # ------------------------
+        # Update the AI Message
+        # ------------------------
+        ai_edits = json.loads(ai_message.edits) if ai_message.edits else []
+        # Save the current AI response version before updating
+        ai_edits.append({
+            'content': ai_message.content,
+            'timestamp': ai_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        ai_message.edits = json.dumps(ai_edits)
+        ai_message.edit_count += 1
+        ai_message.content = chat_response["answer"]
+        ai_message.timestamp = datetime.utcnow()
 
-#         # Return the updated message and assistant's response
-#         return jsonify({
-#             "message": "Message updated successfully",
-#             "updated_message": message.to_dict(),
-#             "assistant_response": chat_response
-#         }), 200
+        db.session.commit()
 
-#     except Exception as e:
-#         db.session.rollback()
-#         logger.error(f"Failed to update message: {e}")
-#         return jsonify({"error": "Failed to update message"}), 500
-    
+        return jsonify({
+            "message": "Messages updated successfully",
+            "updated_user_message": user_message.to_dict(),
+            "updated_ai_message": ai_message.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to update messages: {e}", exc_info=True)
+        return jsonify({"error": "Failed to update messages"}), 500
+
 
 @message_bp.route('/voice', methods=["OPTIONS", "POST"])
 @jwt_required()

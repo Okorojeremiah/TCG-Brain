@@ -56,6 +56,8 @@ def fetch_chat_messages(chat_id):
             "id": m.id,
             "sender": "User" if m.sender == "User" else "Brain", 
             "content": m.content,
+            "edits": m.edits,
+            "edit_count": m.edit_count,
             "timestamp": m.timestamp
         }
         for m in sorted_messages
