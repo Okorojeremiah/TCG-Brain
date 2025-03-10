@@ -47,15 +47,17 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
         answer = chat_response.send_message('text') 
         
         if not is_update:
-            save_message(user_id, session_id, "User", user_query, chat_id)
-            save_message(user_id, session_id, "Brain", answer.text, chat_id)
+            saved_user_message = save_message(user_id, session_id, "User", user_query, chat_id)
+            saved_ai_message = save_message(user_id, session_id, "Brain", answer.text, chat_id)
         
             chat = get_chat(chat_id)
             chat_info = chat.to_dict() if chat and hasattr(chat, "to_dict") else {}
         else:
+            saved_user_message = None
+            saved_ai_message = None
             chat_info = {}
 
-        return {"query": user_query, "answer": answer.text, "chat": chat_info}
+        return {"query": user_query, "answer": answer.text, "saved_user_message": saved_user_message, "saved_ai_message": saved_ai_message, "chat": chat_info}
 
     except Exception as e:
         logger.error(f"Error in query_documents: {e}", exc_info=True)
@@ -88,6 +90,7 @@ def save_message(user_id, session_id, sender, content, chat_id=None):
         )
         db.session.add(message)
         db.session.commit()
+        return message.to_dict()
     except Exception as e:
         logger.error(f"Error saving query history: {e}", exc_info=True)
         raise
