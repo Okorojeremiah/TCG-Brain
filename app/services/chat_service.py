@@ -3,6 +3,7 @@ from app.models.chat import Chat
 from datetime import datetime
 from app.utils.logger import logger
 import re
+import json
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -56,7 +57,7 @@ def fetch_chat_messages(chat_id):
             "id": m.id,
             "sender": "User" if m.sender == "User" else "Brain", 
             "content": m.content,
-            "edits": m.edits,
+            "edits": json.loads(m.edits) if m.edits else [],
             "edit_count": m.edit_count,
             "timestamp": m.timestamp
         }

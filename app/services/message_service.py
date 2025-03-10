@@ -50,7 +50,12 @@ def send_message_receive_response(user_query, current_user, user_id, chat_id, se
             save_message(user_id, session_id, "User", user_query, chat_id)
             save_message(user_id, session_id, "Brain", answer.text, chat_id)
         
-        return {"query": user_query, "answer": answer.text}
+            chat = get_chat(chat_id)
+            chat_info = chat.to_dict() if chat and hasattr(chat, "to_dict") else {}
+        else:
+            chat_info = {}
+
+        return {"query": user_query, "answer": answer.text, "chat": chat_info}
 
     except Exception as e:
         logger.error(f"Error in query_documents: {e}", exc_info=True)
