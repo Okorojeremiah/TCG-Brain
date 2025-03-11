@@ -152,13 +152,14 @@ def voice_mode():
 
     user_id = session_response.get("user_id")
     session_id = session_response.get("session_id")
+    user_department = session_response.get("department")
     if not user_id:
         return jsonify({"error": "User ID not found in session."}), 401
 
     try:
         # Get the chat response from your existing function
         chat_response = send_message_receive_response(
-            transcribed_text, identity, user_id, chat_id, session_id
+            transcribed_text, identity, user_id, chat_id, session_id, user_department, is_update=True
         )
         if "error" in chat_response:
             return jsonify(chat_response), 500
