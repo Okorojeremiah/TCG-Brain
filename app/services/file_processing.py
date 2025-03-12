@@ -3,6 +3,11 @@ from pptx import Presentation
 from datetime import datetime
 import PyPDF2
 import openpyxl
+from pptx.util import Inches
+from openpyxl import Workbook
+import xlwt
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from app.models.document import (
     Document, 
     GeneralDocument,
@@ -67,6 +72,62 @@ def extract_text_from_excel(excel_path):
             row_text = " ".join([str(cell) for cell in row if cell is not None])
             text += row_text + "\n"
     return text
+
+
+def generate_docx_from_text(text):
+    """Generate a valid DOCX file from extracted text."""
+    doc = DocxDocument()
+    doc.add_paragraph(text)
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+    return output
+
+def generate_pptx_from_text(text):
+    """Generate a valid PPTX file from extracted text."""
+    prs = Presentation()
+    # Use a title and content layout (typically layout 1)
+    slide_layout = prs.slide_layouts[1]
+    slide = prs.slides.add_slide(slide_layout)
+    slide.shapes.title.text = "Extracted Text"
+    slide.placeholders[1].text = text
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+    return output
+
+def generate_xlsx_from_text(text):
+    """Generate a valid XLSX file from extracted text."""
+    wb = Workbook()
+    ws = wb.active
+    ws["A1"] = text
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+def generate_xls_from_text(text):
+    """Generate a valid XLS file from extracted text."""
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet("Extracted Text")
+    ws.write(0, 0, text)
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+def generate_pdf_from_text(text):
+    """Generate a valid PDF file from extracted text."""
+    output = BytesIO()
+    c = canvas.Canvas(output, pagesize=letter)
+    width, height = letter
+    # For simplicity, we draw the text at a fixed position.
+    c.drawString(100, height - 100, text)
+    c.showPage()
+    c.save()
+    output.seek(0)
+    return output
+
 
 def save_file(user_id, file, file_extension, text):
         

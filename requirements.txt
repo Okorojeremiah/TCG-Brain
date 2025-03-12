@@ -20,6 +20,8 @@ nltk
 gtts
 gunicorn
 openpyxl
+xlwt
+reportlab
 
 python-jose[cryptography]==3.3.0
 bcrypt==4.1.2

@@ -111,7 +111,7 @@ def fetch_document_content(document_ids: List[int], user_id: int, user_departmen
             department_documents = CommunicationDocument.query.with_entities(CommunicationDocument.content).filter(
                 CommunicationDocument.id.in_(document_ids)
             ).all()
-        elif user_department == 'internal_operation':
+        elif user_department == 'internal_operations':
             department_documents = InternalOperationDocument.query.with_entities(InternalOperationDocument.content).filter(
                 InternalOperationDocument.id.in_(document_ids)
             ).all()
@@ -119,7 +119,7 @@ def fetch_document_content(document_ids: List[int], user_id: int, user_departmen
             department_documents = LegalDocument.query.with_entities(LegalDocument.content).filter(
                 LegalDocument.id.in_(document_ids)
             ).all()
-        elif user_department == 'account':
+        elif user_department == 'accounts':
             department_documents = AccountDocument.query.with_entities(AccountDocument.content).filter(
                 AccountDocument.id.in_(document_ids)
             ).all()
@@ -131,7 +131,7 @@ def fetch_document_content(document_ids: List[int], user_id: int, user_departmen
             department_documents = UnderwriterDocument.query.with_entities(UnderwriterDocument.content).filter(
                 UnderwriterDocument.id.in_(document_ids)
             ).all()
-        elif user_department == 'business_operation':
+        elif user_department == 'business_operations':
             department_documents = BusinessOperationDocument.query.with_entities(BusinessOperationDocument.content).filter(
                 BusinessOperationDocument.id.in_(document_ids)
             ).all()
