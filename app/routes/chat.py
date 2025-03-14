@@ -69,6 +69,11 @@ def get_chat_messages(chat_id):
     """
     if request.method == 'OPTIONS':
         return ' ', 204
+    
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    if "error" in session_response:
+        return jsonify(session_response), 401
 
     result = fetch_chat_messages(chat_id)
     if result["status"] == 404:
@@ -85,6 +90,11 @@ def edit_chat_name(chat_id):
     """
     if request.method == 'OPTIONS':
         return ' ', 204
+    
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    if "error" in session_response:
+        return jsonify(session_response), 401
     
     data = request.json
     if not data or "name" not in data:
@@ -108,6 +118,11 @@ def delete_chat(chat_id):
     """
     if request.method == 'OPTIONS':
         return ' ', 204
+    
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    if "error" in session_response:
+        return jsonify(session_response), 401
 
     result = delete_chat_history(chat_id)
     if result["status"] == 500:
@@ -122,6 +137,11 @@ def set_current_chat():
     if request.method == 'OPTIONS':
         return ' ', 204
     
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    if "error" in session_response:
+        return jsonify(session_response), 401
+    
     chat_id = request.json.get("chatId")
     if chat_id:
         session["current_chat_id"] = chat_id
@@ -134,5 +154,11 @@ def set_current_chat():
 def get_current_chat():
     if request.method == 'OPTIONS':
         return ' ', 204
+    
+    identity = get_jwt_identity()
+    session_response = verify_session(identity)
+    if "error" in session_response:
+        return jsonify(session_response), 401
+    
     current_chat_id = session.get("current_chat_id")
     return jsonify({"chatId": current_chat_id})
