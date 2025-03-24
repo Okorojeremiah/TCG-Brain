@@ -55,79 +55,23 @@ documents_bp = Blueprint('documents', __name__, url_prefix='/documents')
 
 
 
-@documents_bp.route("/upload", methods=["OPTIONS", "POST"])
+@documents_bp.route('/upload', methods=['OPTIONS', 'POST'])
 @jwt_required()
 def upload_document():
     if request.method == 'OPTIONS':
         return '', 204
+
     identity = get_jwt_identity()
     session_response = verify_session(identity)
     user_id = session_response.get("user_id")
-    
-    if "error" in session_response:
-        return jsonify(session_response), 401
-
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-
-    file = request.files["file"]
-    try:
-        logger.info("Starting file compression.")
-        compressed_file = compress_doc(file)
-        logger.info("File compression completed.")
-
-        # Validate and process the file
-        logger.debug("Validating file.")
-        response = validate_file(compressed_file)
-        if "error" in response:
-            logger.error(f"File validation failed: {response['error']}")
-            return jsonify(response), 400
-
-        text = response.get("text")
-        file_type = response.get("file_extension")
-
-        # Save file metadata and content to the database
-        logger.debug("Saving file to database.")
-        document = save_file(user_id, compressed_file, file_type, text)
-        add_doc_with_id_to_faiss(document.content, document.id)
-        
-        logger.debug("File uploaded and processed successfully.")
-        return jsonify({
-            "message": "File uploaded and processed successfully",
-            "file_name": document.file_name,
-            "file_type": document.file_type,
-            "extracted_text": text[:500]
-        }), 200
-    except ValueError as e:
-        logger.error(f"ValueError: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}", exc_info=True)
-        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-    
-
-
-@documents_bp.route('/admin/upload', methods=['OPTIONS', 'POST'])
-@jwt_required()
-def admin_upload_document():
-    if request.method == 'OPTIONS':
-        return '', 204
-
-    identity = get_jwt_identity()
-    print(identity)
-    session_response = verify_session(identity)
-    user_id = session_response.get("user_id")
-    is_superuser = session_response.get("is_superuser")
     user_department = session_response.get("department")  
-    
-    # Ensure only superusers can upload documents
-    if not is_superuser:
-        return jsonify({"error": "Unauthorized access"}), 403
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
     file = request.files["file"]
+    visibility = request.form.get("visibility", "department")  
+    
     try:
         logger.info("Starting file compression.")
         compressed_file = compress_doc(file)
@@ -140,12 +84,12 @@ def admin_upload_document():
         text = response.get("text")
         file_type = response.get("file_extension")
 
-        # Determine which table to save the document based on the user's department
-        if user_department == "admin":
-            # Save to GeneralDocument table
+        # Determine where to save based on visibility
+        if visibility == "general":
             document = save_general_files(user_id, compressed_file, file_type, text)
-        else:
-            # Save to the respective department table
+        elif visibility == "personal":
+            document = save_file(user_id, compressed_file, file_type, text)
+        else:  # department visibility
             if user_department == "hr":
                 document = save_hr_files(user_id, compressed_file, file_type, text)
             elif user_department == "it":
@@ -181,185 +125,18 @@ def admin_upload_document():
             else:
                 return jsonify({"error": "Invalid department"}), 400
 
-        # Add the document to FAISS for indexing
         add_doc_with_id_to_faiss(document.content, document.id)
 
         return jsonify({
-            "message": f"Document uploaded successfully to {user_department} department",
+            "message": f"Document uploaded successfully with {visibility} visibility",
             "file_name": document.file_name,
             "file_type": document.file_type,
-            "extracted_text": text[:500]  # Return the first 500 characters of the extracted text
+            "extracted_text": text[:500]
         }), 200
     except Exception as e:
         logger.error(f"Error uploading document: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500   
-    
-    
-# @documents_bp.route('/accessible-documents', methods=['OPTIONS', 'GET'])
-# @jwt_required()
-# def get_accessible_documents():
-#     if request.method == 'OPTIONS':
-#         return '', 204
+        return jsonify({"error": str(e)}), 500
 
-#     identity = get_jwt_identity()
-#     session_response = verify_session(identity)
-#     user_id = session_response.get("user_id")
-#     user_department = session_response.get("department")
-
-#     if "error" in session_response:
-#         return jsonify(session_response), 401
-
-#     try:
-#         # Fetch general documents
-#         general_documents = GeneralDocument.query.with_entities(
-#             GeneralDocument.id,
-#             GeneralDocument.file_name,
-#             GeneralDocument.file_type,
-#             GeneralDocument.upload_date
-#         ).all()
-
-#         # Fetch department-specific documents
-#         department_documents = []
-#         if user_department == 'hr':
-#             department_documents = HRDocument.query.with_entities(
-#                 HRDocument.id,
-#                 HRDocument.file_name,
-#                 HRDocument.file_type,
-#                 HRDocument.upload_date
-#             ).all()
-#         elif user_department == 'it':
-#             department_documents = ITDocument.query.with_entities(
-#                 ITDocument.id,
-#                 ITDocument.file_name,
-#                 ITDocument.file_type,
-#                 ITDocument.upload_date
-#             ).all()
-#         elif user_department == "reconciliation":
-#             department_documents = ReconciliationDocument.query.with_entities(
-#                 ReconciliationDocument.id,
-#                 ReconciliationDocument.file_name,
-#                 ReconciliationDocument.file_type,
-#                 ReconciliationDocument.upload_date
-#             ).all()
-#         elif user_department == 'marketing':
-#             department_documents = MarketingDocument.query.with_entities(
-#                 MarketingDocument.id,
-#                 MarketingDocument.file_name,
-#                 MarketingDocument.file_type,
-#                 MarketingDocument.upload_date
-#             ).all()
-#         elif user_department == 'transformation':
-#             department_documents = TransformationDocument.query.with_entities(
-#                 TransformationDocument.id,
-#                 TransformationDocument.file_name,
-#                 TransformationDocument.file_type,
-#                 TransformationDocument.upload_date
-#             ).all()
-#         elif user_department == 'communication':
-#             department_documents = CommunicationDocument.query.join(
-#                     User, CommunicationDocument.uploaded_by == User.id
-#                 ).with_entities(
-#                     CommunicationDocument.id,
-#                     CommunicationDocument.file_name,
-#                     CommunicationDocument.file_type,
-#                     CommunicationDocument.upload_date,
-#                     User.username.label("uploader")  
-#                 ).all()
-#         elif user_department == 'internal_operations':
-#             department_documents = InternalOperationDocument.query.with_entities(
-#                 InternalOperationDocument.id,
-#                 InternalOperationDocument.file_name,
-#                 InternalOperationDocument.file_type,
-#                 InternalOperationDocument.upload_date
-#             ).all()
-#         elif user_department == 'legal':
-#             department_documents = LegalDocument.query.with_entities(
-#                 LegalDocument.id,
-#                 LegalDocument.file_name,
-#                 LegalDocument.file_type,
-#                 LegalDocument.upload_date
-#             ).all()
-#         elif user_department == 'accounts':
-#             department_documents = AccountDocument.query.with_entities(
-#                 AccountDocument.id,
-#                 AccountDocument.file_name,
-#                 AccountDocument.file_type,
-#                 AccountDocument.upload_date
-#             ).all()
-#         elif user_department == 'portfolio_risk':
-#             department_documents = PortfolioRiskDocument.query.with_entities(
-#                 PortfolioRiskDocument.id,
-#                 PortfolioRiskDocument.file_name,
-#                 PortfolioRiskDocument.file_type,
-#                 PortfolioRiskDocument.upload_date
-#             ).all()
-#         elif user_department == 'underwriting':
-#             department_documents = UnderwriterDocument.query.with_entities(
-#                 UnderwriterDocument.id,
-#                 UnderwriterDocument.file_name,
-#                 UnderwriterDocument.file_type,
-#                 UnderwriterDocument.upload_date
-#             ).all()
-#         elif user_department == 'business_operations':
-#             department_documents = BusinessOperationDocument.query.with_entities(
-#                 BusinessOperationDocument.id,
-#                 BusinessOperationDocument.file_name,
-#                 BusinessOperationDocument.file_type,
-#                 BusinessOperationDocument.upload_date
-#             ).all()
-#         elif user_department == 'client_experience':
-#             department_documents = ClientExperienceDocument.query.with_entities(
-#                 ClientExperienceDocument.id,
-#                 ClientExperienceDocument.file_name,
-#                 ClientExperienceDocument.file_type,
-#                 ClientExperienceDocument.upload_date
-#             ).all()
-#         elif user_department == 'recovery':
-#             department_documents = RecoveryDocument.query.with_entities(
-#                 RecoveryDocument.id,
-#                 RecoveryDocument.file_name,
-#                 RecoveryDocument.file_type,
-#                 RecoveryDocument.upload_date
-#             ).all()
-#         elif user_department == 'product':
-#             department_documents = ProductDocument.query.with_entities(
-#                 ProductDocument.id,
-#                 ProductDocument.file_name,
-#                 ProductDocument.file_type,
-#                 ProductDocument.upload_date
-#             ).all()
-#         elif user_department == 'sales':
-#             department_documents = SalesDocument.query.with_entities(
-#                 SalesDocument.id,
-#                 SalesDocument.file_name,
-#                 SalesDocument.file_type,
-#                 SalesDocument.upload_date
-#             ).all()
-
-#         # Fetch user-specific documents
-#         user_documents = Document.query.with_entities(
-#             Document.id,
-#             Document.file_name,
-#             Document.file_type,
-#             Document.upload_date
-#         ).filter(Document.user_id == user_id).all()
-
-#         # Combine all documents
-#         accessible_documents = general_documents + department_documents + user_documents
-
-#         # Convert to a list of dictionaries
-#         documents_list = [{
-#             "id": doc.id,
-#             "file_name": doc.file_name,
-#             "file_type": doc.file_type,
-#             "upload_date": doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')
-#         } for doc in accessible_documents]
-
-#         return jsonify({"documents": documents_list}), 200
-
-#     except Exception as e:
-#         logger.error(f"Error fetching accessible documents: {e}", exc_info=True)
-#         return jsonify({"error": str(e)}), 500
 
 
 @documents_bp.route('/accessible-documents', methods=['OPTIONS', 'GET'])
