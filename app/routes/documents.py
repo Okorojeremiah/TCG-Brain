@@ -5,6 +5,7 @@ from app.utils.upload_validation import validate_file
 from app.services.file_processing import generate_docx_from_text, generate_pdf_from_text, generate_pptx_from_text, generate_xls_from_text, generate_xlsx_from_text
 from flask import send_file
 from io import BytesIO
+from app.models.user import User
 from app.models.document import (
     Document, 
     GeneralDocument,
@@ -194,6 +195,173 @@ def admin_upload_document():
         return jsonify({"error": str(e)}), 500   
     
     
+# @documents_bp.route('/accessible-documents', methods=['OPTIONS', 'GET'])
+# @jwt_required()
+# def get_accessible_documents():
+#     if request.method == 'OPTIONS':
+#         return '', 204
+
+#     identity = get_jwt_identity()
+#     session_response = verify_session(identity)
+#     user_id = session_response.get("user_id")
+#     user_department = session_response.get("department")
+
+#     if "error" in session_response:
+#         return jsonify(session_response), 401
+
+#     try:
+#         # Fetch general documents
+#         general_documents = GeneralDocument.query.with_entities(
+#             GeneralDocument.id,
+#             GeneralDocument.file_name,
+#             GeneralDocument.file_type,
+#             GeneralDocument.upload_date
+#         ).all()
+
+#         # Fetch department-specific documents
+#         department_documents = []
+#         if user_department == 'hr':
+#             department_documents = HRDocument.query.with_entities(
+#                 HRDocument.id,
+#                 HRDocument.file_name,
+#                 HRDocument.file_type,
+#                 HRDocument.upload_date
+#             ).all()
+#         elif user_department == 'it':
+#             department_documents = ITDocument.query.with_entities(
+#                 ITDocument.id,
+#                 ITDocument.file_name,
+#                 ITDocument.file_type,
+#                 ITDocument.upload_date
+#             ).all()
+#         elif user_department == "reconciliation":
+#             department_documents = ReconciliationDocument.query.with_entities(
+#                 ReconciliationDocument.id,
+#                 ReconciliationDocument.file_name,
+#                 ReconciliationDocument.file_type,
+#                 ReconciliationDocument.upload_date
+#             ).all()
+#         elif user_department == 'marketing':
+#             department_documents = MarketingDocument.query.with_entities(
+#                 MarketingDocument.id,
+#                 MarketingDocument.file_name,
+#                 MarketingDocument.file_type,
+#                 MarketingDocument.upload_date
+#             ).all()
+#         elif user_department == 'transformation':
+#             department_documents = TransformationDocument.query.with_entities(
+#                 TransformationDocument.id,
+#                 TransformationDocument.file_name,
+#                 TransformationDocument.file_type,
+#                 TransformationDocument.upload_date
+#             ).all()
+#         elif user_department == 'communication':
+#             department_documents = CommunicationDocument.query.join(
+#                     User, CommunicationDocument.uploaded_by == User.id
+#                 ).with_entities(
+#                     CommunicationDocument.id,
+#                     CommunicationDocument.file_name,
+#                     CommunicationDocument.file_type,
+#                     CommunicationDocument.upload_date,
+#                     User.username.label("uploader")  
+#                 ).all()
+#         elif user_department == 'internal_operations':
+#             department_documents = InternalOperationDocument.query.with_entities(
+#                 InternalOperationDocument.id,
+#                 InternalOperationDocument.file_name,
+#                 InternalOperationDocument.file_type,
+#                 InternalOperationDocument.upload_date
+#             ).all()
+#         elif user_department == 'legal':
+#             department_documents = LegalDocument.query.with_entities(
+#                 LegalDocument.id,
+#                 LegalDocument.file_name,
+#                 LegalDocument.file_type,
+#                 LegalDocument.upload_date
+#             ).all()
+#         elif user_department == 'accounts':
+#             department_documents = AccountDocument.query.with_entities(
+#                 AccountDocument.id,
+#                 AccountDocument.file_name,
+#                 AccountDocument.file_type,
+#                 AccountDocument.upload_date
+#             ).all()
+#         elif user_department == 'portfolio_risk':
+#             department_documents = PortfolioRiskDocument.query.with_entities(
+#                 PortfolioRiskDocument.id,
+#                 PortfolioRiskDocument.file_name,
+#                 PortfolioRiskDocument.file_type,
+#                 PortfolioRiskDocument.upload_date
+#             ).all()
+#         elif user_department == 'underwriting':
+#             department_documents = UnderwriterDocument.query.with_entities(
+#                 UnderwriterDocument.id,
+#                 UnderwriterDocument.file_name,
+#                 UnderwriterDocument.file_type,
+#                 UnderwriterDocument.upload_date
+#             ).all()
+#         elif user_department == 'business_operations':
+#             department_documents = BusinessOperationDocument.query.with_entities(
+#                 BusinessOperationDocument.id,
+#                 BusinessOperationDocument.file_name,
+#                 BusinessOperationDocument.file_type,
+#                 BusinessOperationDocument.upload_date
+#             ).all()
+#         elif user_department == 'client_experience':
+#             department_documents = ClientExperienceDocument.query.with_entities(
+#                 ClientExperienceDocument.id,
+#                 ClientExperienceDocument.file_name,
+#                 ClientExperienceDocument.file_type,
+#                 ClientExperienceDocument.upload_date
+#             ).all()
+#         elif user_department == 'recovery':
+#             department_documents = RecoveryDocument.query.with_entities(
+#                 RecoveryDocument.id,
+#                 RecoveryDocument.file_name,
+#                 RecoveryDocument.file_type,
+#                 RecoveryDocument.upload_date
+#             ).all()
+#         elif user_department == 'product':
+#             department_documents = ProductDocument.query.with_entities(
+#                 ProductDocument.id,
+#                 ProductDocument.file_name,
+#                 ProductDocument.file_type,
+#                 ProductDocument.upload_date
+#             ).all()
+#         elif user_department == 'sales':
+#             department_documents = SalesDocument.query.with_entities(
+#                 SalesDocument.id,
+#                 SalesDocument.file_name,
+#                 SalesDocument.file_type,
+#                 SalesDocument.upload_date
+#             ).all()
+
+#         # Fetch user-specific documents
+#         user_documents = Document.query.with_entities(
+#             Document.id,
+#             Document.file_name,
+#             Document.file_type,
+#             Document.upload_date
+#         ).filter(Document.user_id == user_id).all()
+
+#         # Combine all documents
+#         accessible_documents = general_documents + department_documents + user_documents
+
+#         # Convert to a list of dictionaries
+#         documents_list = [{
+#             "id": doc.id,
+#             "file_name": doc.file_name,
+#             "file_type": doc.file_type,
+#             "upload_date": doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')
+#         } for doc in accessible_documents]
+
+#         return jsonify({"documents": documents_list}), 200
+
+#     except Exception as e:
+#         logger.error(f"Error fetching accessible documents: {e}", exc_info=True)
+#         return jsonify({"error": str(e)}), 500
+
+
 @documents_bp.route('/accessible-documents', methods=['OPTIONS', 'GET'])
 @jwt_required()
 def get_accessible_documents():
@@ -209,136 +377,191 @@ def get_accessible_documents():
         return jsonify(session_response), 401
 
     try:
-        # Fetch general documents
-        general_documents = GeneralDocument.query.with_entities(
+        # Fetch general documents with uploader's name
+        general_documents = GeneralDocument.query.join(
+            User, GeneralDocument.uploaded_by == User.id
+        ).with_entities(
             GeneralDocument.id,
             GeneralDocument.file_name,
             GeneralDocument.file_type,
-            GeneralDocument.upload_date
+            GeneralDocument.upload_date,
+            User.name.label("uploader")  # Include uploader's name
         ).all()
 
-        # Fetch department-specific documents
+        # Fetch department-specific documents with uploader's name
         department_documents = []
         if user_department == 'hr':
-            department_documents = HRDocument.query.with_entities(
+            department_documents = HRDocument.query.join(
+                User, HRDocument.uploaded_by == User.id
+            ).with_entities(
                 HRDocument.id,
                 HRDocument.file_name,
                 HRDocument.file_type,
-                HRDocument.upload_date
+                HRDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'it':
-            department_documents = ITDocument.query.with_entities(
+            department_documents = ITDocument.query.join(
+                User, ITDocument.uploaded_by == User.id
+            ).with_entities(
                 ITDocument.id,
                 ITDocument.file_name,
                 ITDocument.file_type,
-                ITDocument.upload_date
+                ITDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == "reconciliation":
-            department_documents = ReconciliationDocument.query.with_entities(
+            department_documents = ReconciliationDocument.query.join(
+                User, ReconciliationDocument.uploaded_by == User.id
+            ).with_entities(
                 ReconciliationDocument.id,
                 ReconciliationDocument.file_name,
                 ReconciliationDocument.file_type,
-                ReconciliationDocument.upload_date
+                ReconciliationDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'marketing':
-            department_documents = MarketingDocument.query.with_entities(
+            department_documents = MarketingDocument.query.join(
+                User, MarketingDocument.uploaded_by == User.id
+            ).with_entities(
                 MarketingDocument.id,
                 MarketingDocument.file_name,
                 MarketingDocument.file_type,
-                MarketingDocument.upload_date
+                MarketingDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'transformation':
-            department_documents = TransformationDocument.query.with_entities(
+            department_documents = TransformationDocument.query.join(
+                User, TransformationDocument.uploaded_by == User.id
+            ).with_entities(
                 TransformationDocument.id,
                 TransformationDocument.file_name,
                 TransformationDocument.file_type,
-                TransformationDocument.upload_date
+                TransformationDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'communication':
-            department_documents = CommunicationDocument.query.with_entities(
+            department_documents = CommunicationDocument.query.join(
+                User, CommunicationDocument.uploaded_by == User.id
+            ).with_entities(
                 CommunicationDocument.id,
                 CommunicationDocument.file_name,
                 CommunicationDocument.file_type,
-                CommunicationDocument.upload_date
+                CommunicationDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'internal_operations':
-            department_documents = InternalOperationDocument.query.with_entities(
+            department_documents = InternalOperationDocument.query.join(
+                User, InternalOperationDocument.uploaded_by == User.id
+            ).with_entities(
                 InternalOperationDocument.id,
                 InternalOperationDocument.file_name,
                 InternalOperationDocument.file_type,
-                InternalOperationDocument.upload_date
+                InternalOperationDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'legal':
-            department_documents = LegalDocument.query.with_entities(
+            department_documents = LegalDocument.query.join(
+                User, LegalDocument.uploaded_by == User.id
+            ).with_entities(
                 LegalDocument.id,
                 LegalDocument.file_name,
                 LegalDocument.file_type,
-                LegalDocument.upload_date
+                LegalDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'accounts':
-            department_documents = AccountDocument.query.with_entities(
+            department_documents = AccountDocument.query.join(
+                User, AccountDocument.uploaded_by == User.id
+            ).with_entities(
                 AccountDocument.id,
                 AccountDocument.file_name,
                 AccountDocument.file_type,
-                AccountDocument.upload_date
+                AccountDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'portfolio_risk':
-            department_documents = PortfolioRiskDocument.query.with_entities(
+            department_documents = PortfolioRiskDocument.query.join(
+                User, PortfolioRiskDocument.uploaded_by == User.id
+            ).with_entities(
                 PortfolioRiskDocument.id,
                 PortfolioRiskDocument.file_name,
                 PortfolioRiskDocument.file_type,
-                PortfolioRiskDocument.upload_date
+                PortfolioRiskDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'underwriting':
-            department_documents = UnderwriterDocument.query.with_entities(
+            department_documents = UnderwriterDocument.query.join(
+                User, UnderwriterDocument.uploaded_by == User.id
+            ).with_entities(
                 UnderwriterDocument.id,
                 UnderwriterDocument.file_name,
                 UnderwriterDocument.file_type,
-                UnderwriterDocument.upload_date
+                UnderwriterDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'business_operations':
-            department_documents = BusinessOperationDocument.query.with_entities(
+            department_documents = BusinessOperationDocument.query.join(
+                User, BusinessOperationDocument.uploaded_by == User.id
+            ).with_entities(
                 BusinessOperationDocument.id,
                 BusinessOperationDocument.file_name,
                 BusinessOperationDocument.file_type,
-                BusinessOperationDocument.upload_date
+                BusinessOperationDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'client_experience':
-            department_documents = ClientExperienceDocument.query.with_entities(
+            department_documents = ClientExperienceDocument.query.join(
+                User, ClientExperienceDocument.uploaded_by == User.id
+            ).with_entities(
                 ClientExperienceDocument.id,
                 ClientExperienceDocument.file_name,
                 ClientExperienceDocument.file_type,
-                ClientExperienceDocument.upload_date
+                ClientExperienceDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'recovery':
-            department_documents = RecoveryDocument.query.with_entities(
+            department_documents = RecoveryDocument.query.join(
+                User, RecoveryDocument.uploaded_by == User.id
+            ).with_entities(
                 RecoveryDocument.id,
                 RecoveryDocument.file_name,
                 RecoveryDocument.file_type,
-                RecoveryDocument.upload_date
+                RecoveryDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'product':
-            department_documents = ProductDocument.query.with_entities(
+            department_documents = ProductDocument.query.join(
+                User, ProductDocument.uploaded_by == User.id
+            ).with_entities(
                 ProductDocument.id,
                 ProductDocument.file_name,
                 ProductDocument.file_type,
-                ProductDocument.upload_date
+                ProductDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
         elif user_department == 'sales':
-            department_documents = SalesDocument.query.with_entities(
+            department_documents = SalesDocument.query.join(
+                User, SalesDocument.uploaded_by == User.id
+            ).with_entities(
                 SalesDocument.id,
                 SalesDocument.file_name,
                 SalesDocument.file_type,
-                SalesDocument.upload_date
+                SalesDocument.upload_date,
+                User.name.label("uploader")  # Include uploader's name
             ).all()
 
-        # Fetch user-specific documents
-        user_documents = Document.query.with_entities(
-            Document.id,
-            Document.file_name,
-            Document.file_type,
-            Document.upload_date
-        ).filter(Document.user_id == user_id).all()
+        # Fetch user-specific documents with uploader's name
+        user_documents = Document.query.join(
+        User, Document.user_id == User.id
+            ).with_entities(
+                Document.id,
+                Document.file_name,
+                Document.file_type,
+                Document.upload_date,
+                User.name.label("uploader")
+            ).filter(Document.user_id == user_id).all()
+
 
         # Combine all documents
         accessible_documents = general_documents + department_documents + user_documents
@@ -348,7 +571,8 @@ def get_accessible_documents():
             "id": doc.id,
             "file_name": doc.file_name,
             "file_type": doc.file_type,
-            "upload_date": doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')
+            "upload_date": doc.upload_date.strftime('%Y-%m-%d %H:%M:%S'),
+            "uploader": doc.uploader  # Include uploader's name
         } for doc in accessible_documents]
 
         return jsonify({"documents": documents_list}), 200
@@ -356,7 +580,6 @@ def get_accessible_documents():
     except Exception as e:
         logger.error(f"Error fetching accessible documents: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-    
     
 
 @documents_bp.route('/download/<int:document_id>', methods=['OPTIONS', 'GET'])
