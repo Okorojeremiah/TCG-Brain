@@ -7,18 +7,16 @@ TCGBrain is an intelligent organizational assistant developed by TCG. It leverag
 - 💬 Conversational AI (TCG Assistant) for internal team queries
 - 📄 Document ingestion & retrieval (PDF, Word, PowerPoint)
 - 🧠 AI-powered Q&A and content generation
-- 📊 Report & dashboard generation support
 - 🔐 Access control and department-specific customization
-- ☁️ Cloud storage + scalable architecture
+
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Python (FastAPI / Flask)
-- **AI/LLM**: OpenAI GPT-3.5 / Google Gemini
-- **Frontend**: React (Shadcn + Tailwind)
-- **Database**: MongoDB / PostgreSQL
+- **Backend**: Python (Flask)
+- **AI/LLM**: Google Gemini
+- **Frontend**: React 
+- **Database**: PostgreSQL
 - **Document Handling**: PyMuPDF, python-docx, python-pptx
-- **Cloud Services**: GCP / AWS (Optional)
 - **Authentication**: JWT / OAuth2 (Coming soon)
 
 ## 📁 Folder Structure
@@ -54,16 +52,8 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # on Windows use `venv\Scripts\activate`
 pip install -r requirements.txt
-uvicorn main:app --reload
+gunicorn main:app
 ````
-
-### 💻 Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
 
 ## 📌 Usage
 
@@ -74,8 +64,8 @@ npm run dev
 
 ## 🧪 TODO
 
-* [ ] Integrate Google Gemini API
-* [ ] Add support for virtual accounts & wallets
+* [ ] Report & dashboard generation support
+* [ ] Cloud storage + scalable architecture
 * [ ] Improve multi-language support
 * [ ] Role-based access control
 * [ ] Audit logging & feedback loop for answers
