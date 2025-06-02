@@ -13,7 +13,7 @@ TCGBrain is an intelligent organizational assistant developed by TCG. It leverag
 ## 🛠️ Tech Stack
 
 - **Backend**: Python (Flask)
-- **AI/LLM**: Google Gemini
+- **AI/LLM**: Google Gemini, HuggingFace Transformers, NLTK
 - **Frontend**: React 
 - **Database**: PostgreSQL
 - **Document Handling**: PyMuPDF, python-docx, python-pptx
